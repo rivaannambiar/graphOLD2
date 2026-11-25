@@ -118,6 +118,7 @@
       { label: 'Community wall', icon: 'globe', run: () => router.go('community') },
       { label: 'My graphs', icon: 'grid', run: () => $('#tbGraphs').click() },
       { label: 'Settings', icon: 'settings', run: () => GS.pages.settingsModal() },
+      { label: 'Change accent colour', icon: 'palette', keywords: 'theme color colour', run: () => GS.pages.settingsModal() },
     ]);
   }
 
@@ -148,6 +149,7 @@
 
   async function boot() {
     document.documentElement.classList.toggle('reduce', !!C.prefs.reduceMotion);
+    U.applyAccent(C.prefs.accent, true);
     if (!window.Chart) {
       $('#app').innerHTML = '<div class="page-msg"><div class="blocker-card"><h2>Couldn’t load the graph library</h2><p>Check your internet connection and reload. Graph Studio loads Chart.js from cdn.jsdelivr.net.</p></div></div>';
       return;
