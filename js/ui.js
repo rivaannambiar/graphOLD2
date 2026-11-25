@@ -218,7 +218,7 @@
   const reduce = () => C.prefs.reduceMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
   function confetti(x, y, colors, count) {
     if (reduce()) return;
-    colors = colors && colors.length ? colors : ['#ff5ca2', '#338ced', '#ffb84d', '#2fd39a', '#9887ef'];
+    colors = colors && colors.length ? colors : [C.accentSet(C.prefs.accent).light, '#338ced', '#ffb84d', '#2fd39a', '#9887ef'];
     count = count || 28;
     for (let i = 0; i < count; i++) {
       const a = Math.random() * Math.PI * 2;
@@ -260,6 +260,31 @@
       if (k < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
+  }
+
+  /* ---------- accent colour ---------- */
+  // Sets every accent CSS variable from one colour, and recolours the tab icon.
+  function applyAccent(hex, instant) {
+    const a = C.accentSet(hex);
+    const root = document.documentElement;
+    if (instant) root.style.transition = 'none';
+    const vars = {
+      '--accent': a.main, '--accent-2': a.light, '--accent-btn': a.btn, '--on-accent': a.on,
+      '--accent-soft': C.rgba(a.main, 0.16), '--accent-line': C.rgba(a.main, 0.45),
+      '--accent-glow': C.rgba(a.main, 0.6), '--accent-faint': C.rgba(a.main, 0.1),
+    };
+    Object.keys(vars).forEach((k) => root.style.setProperty(k, vars[k]));
+    if (instant) { void root.offsetWidth; requestAnimationFrame(() => { root.style.transition = ''; }); }
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="${a.main}"/><path d="M10 22v-5M16 22V10M22 22v-8" stroke="${a.on}" stroke-width="3.2" stroke-linecap="round"/></svg>`;
+    const icon = document.querySelector('link[rel="icon"]');
+    if (icon) icon.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+    C.bus.emit('accent', a);
+    return a;
+  }
+  function setAccent(hex) {
+    C.prefs.accent = C.normHex(hex);
+    C.savePrefs();
+    return applyAccent(C.prefs.accent);
   }
 
   /* ---------- avatars ---------- */
@@ -317,5 +342,5 @@
     el.querySelectorAll('button').forEach((b) => { const on = b.dataset.v === String(value); b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
   }
 
-  GS.ui = { toast, modal, confirm, popover, menu, colorPicker, confetti, emojiBurst, countUp, avatar, initials, hashColor, commandPalette, seg, setSeg, pushLayer, reduce, hideTip };
+  GS.ui = { applyAccent, setAccent, toast, modal, confirm, popover, menu, colorPicker, confetti, emojiBurst, countUp, avatar, initials, hashColor, commandPalette, seg, setSeg, pushLayer, reduce, hideTip };
 })();
