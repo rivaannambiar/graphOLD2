@@ -13,27 +13,33 @@
     />
     <meta name="theme-color" content="#121218" />
     <script>
-      /* Works out where Graph Studio lives, so pretty links like
-       /graph/johncenagrades2025/preview still load css/ and js/. */
+      /* Works out where Graph Studio lives, so css/ and js/ load from the right
+         folder on links like /graph/johncenagrades2025/preview. The app's own
+         links are recognised by their shape, so it also works when the repo
+         itself is called "graph" or "studio" (github.io/graph/). */
       (function () {
-        var keys = ["graph", "studio", "community", "u", "view"];
-        var segs = location.pathname.split("/");
-        var at = -1;
-        for (var i = 1; i < segs.length; i++) {
-          if (keys.indexOf(segs[i]) !== -1) {
-            at = i;
-            break;
-          }
-        }
-        var base =
-          at > 0
-            ? segs.slice(0, at).join("/") + "/"
-            : location.pathname.replace(/[^\/]*$/, "");
-        var b = document.createElement("base");
-        b.href = base;
-        document.head.appendChild(b);
-        window.GS_BASE = base;
-      })();
+      var words = ["graph", "studio", "community", "u", "view", "preview"];
+      function isRoute(p) {
+        var a = p[0], n = p.length;
+        var param = n > 1 && /^[A-Za-z0-9_-]+$/.test(p[1]) && words.indexOf(p[1]) === -1;
+        if (a === "studio") return n === 1 || (n === 2 && param);
+        if (a === "community") return n === 1;
+        if (a === "u" || a === "view") return n === 2 && param;
+        if (a === "graph") return param && (n === 2 || (n === 3 && p[2] === "preview"));
+        return false;
+      }
+      var segs = location.pathname.split("/");
+      if (segs[segs.length - 1] === "") segs.pop();
+      var at = -1;
+      for (var i = 1; i < segs.length; i++) {
+        if (isRoute(segs.slice(i))) at = i; // keep the right-most match
+      }
+      var base = at > 0 ? segs.slice(0, at).join("/") + "/" : location.pathname.replace(/[^\/]*$/, "");
+      var b = document.createElement("base");
+      b.href = base;
+      document.head.appendChild(b);
+      window.GS_BASE = base;
+    })();
     </script>
     <link
       rel="icon"

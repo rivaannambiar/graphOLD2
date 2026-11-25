@@ -2,21 +2,46 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Graph Studio</title>
   <!-- graph-studio-404 -->
   <script>
-    /* GitHub Pages sends unknown paths here. This bounces
-       /graph/my-graph/preview to the app, which restores the pretty URL. */
+    /* GitHub Pages sends unknown paths here. App links like
+       /graph/graph/my-graph/preview bounce back to the app, which restores the
+       pretty URL. Anything else gets a plain "not found" message (no loops). */
     (function () {
-      var keys = ['graph', 'studio', 'community', 'u', 'view'];
-      var segs = location.pathname.split('/');
+      var words = ["graph", "studio", "community", "u", "view", "preview"];
+      function isRoute(p) {
+        var a = p[0], n = p.length;
+        var param = n > 1 && /^[A-Za-z0-9_-]+$/.test(p[1]) && words.indexOf(p[1]) === -1;
+        if (a === "studio") return n === 1 || (n === 2 && param);
+        if (a === "community") return n === 1;
+        if (a === "u" || a === "view") return n === 2 && param;
+        if (a === "graph") return param && (n === 2 || (n === 3 && p[2] === "preview"));
+        return false;
+      }
+      var segs = location.pathname.split("/");
+      if (segs[segs.length - 1] === "") segs.pop();
       var at = -1;
-      for (var i = 1; i < segs.length; i++) { if (keys.indexOf(segs[i]) !== -1) { at = i; break; } }
-      var base = at > 0 ? segs.slice(0, at).join('/') + '/' : '/';
-      var route = at > 0 ? segs.slice(at).join('/') : '';
-      location.replace(base + '?r=' + encodeURIComponent(route + location.search) + location.hash);
+      for (var i = 1; i < segs.length; i++) {
+        if (isRoute(segs.slice(i))) at = i; // keep the right-most match
+      }
+      if (at > 0 && location.search.indexOf("r=") === -1) {
+        var base = segs.slice(0, at).join("/") + "/";
+        location.replace(base + "?r=" + encodeURIComponent(segs.slice(at).join("/") + location.search) + location.hash);
+      }
     })();
   </script>
 </head>
-<body style="background:#121218"></body>
+<body style="margin:0;min-height:100vh;background:#121218;color:#f3f3f6;font-family:system-ui,-apple-system,'Segoe UI',sans-serif">
+  <div style="max-width:420px;margin:0 auto;padding:18vh 20px;text-align:center">
+    <h1 style="font-size:22px;margin:0 0 8px">This page doesn’t exist</h1>
+    <p style="color:#a6a6b2;margin:0 0 18px">Check the link, or head back to your graphs.</p>
+    <a id="home" href="/" style="color:#ff5ca2;font-weight:700;text-decoration:none">Open Graph Studio</a>
+  </div>
+  <script>
+    var s = location.pathname.split("/");
+    if (/\.github\.io$/.test(location.hostname) && s[1]) document.getElementById("home").href = "/" + s[1] + "/";
+  </script>
+</body>
 </html>
