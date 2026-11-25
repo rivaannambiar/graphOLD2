@@ -99,6 +99,27 @@
     return '#' + x;
   }
 
+  function mix(a, b, t) {
+    const x = hexToRgb(a), y = hexToRgb(b);
+    const c = (u, v) => Math.round(u + (v - u) * t).toString(16).padStart(2, '0');
+    return '#' + c(x.r, y.r) + c(x.g, y.g) + c(x.b, y.b);
+  }
+  const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+
+  /* ---------------- accent colour ---------------- */
+  const ACCENTS = [['#f43f8c', 'Pink'], ['#ff6b4a', 'Coral'], ['#f5a524', 'Amber'], ['#8bd63f', 'Lime'], ['#22c58b', 'Mint'], ['#2fa8ff', 'Sky'], ['#6c7bff', 'Iris'], ['#a55cff', 'Violet']];
+  // From one colour, works out the shades the interface needs:
+  // light = readable text/outlines on the dark cards, btn = dark enough for white button text,
+  // on = black or white for icons sitting on the accent itself.
+  function accentSet(hex) {
+    const main = validHex(hex) ? normHex(hex) : '#f43f8c';
+    let light = main, t = 0;
+    while (contrast(light, '#1f1f26') < 4.5 && t < 0.9) { t += 0.05; light = mix(main, '#ffffff', t); }
+    let btn = main; t = 0;
+    while (contrast(btn, '#ffffff') < 4.5 && t < 0.9) { t += 0.05; btn = mix(main, '#000000', t); }
+    return { main, light, btn, on: inkOn(main) };
+  }
+
   /* ---------------- misc ---------------- */
   const rid = (p) => (p || '') + Math.random().toString(36).slice(2, 7) + Date.now().toString(36).slice(-3);
   const clone = (o) => (o === undefined || o === null ? o : JSON.parse(JSON.stringify(o)));
@@ -430,7 +451,7 @@
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
     del(k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } },
   };
-  const prefs = Object.assign({ reduceMotion: false, cursors: true, shareName: '', tool: 'pointer' }, store.get('gs.prefs', {}));
+  const prefs = Object.assign({ reduceMotion: false, cursors: true, shareName: '', tool: 'pointer', accent: '#f43f8c' }, store.get('gs.prefs', {}));
   const savePrefs = () => store.set('gs.prefs', prefs);
 
   const Library = {
@@ -543,7 +564,7 @@
 
   GS.core = {
     $, $$, esc, h, on, bus, clamp, parseNum, fmtNum, statsOf,
-    hexToRgb, rgba, lum, inkOn, validHex, normHex,
+    hexToRgb, rgba, lum, inkOn, validHex, normHex, mix, contrast, ACCENTS, accentSet,
     rid, clone, sleep, debounce, throttle, timeAgo, slugify, cleanSlug, download, loadScript, copyText,
     PALETTES, SWATCHES, WALLPAPERS, TYPES, TYPE, SAMPLES,
     blankDoc, normalize, rowsOf, seriesOf, addSeries, addRow, applyPalette, paletteColors, isRowColored,
