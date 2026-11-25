@@ -15,9 +15,10 @@
   const EASING = { smooth: 'easeOutQuart', snappy: 'easeOutExpo', springy: 'easeOutBack', linear: 'linear' };
 
   function theme(surface) {
+    const acc = C.accentSet(C.prefs.accent);
     return surface === 'light'
-      ? { bg: '#ffffff', text: '#1b1b22', muted: '#62626e', grid: 'rgba(20,20,35,.08)', tipBg: '#1b1b22', tipText: '#ffffff', tipLine: 'rgba(0,0,0,.08)', ring: '#ffffff', pill: 'rgba(20,20,35,.07)', accent: '#d1256c', cross: 'rgba(20,20,35,.22)' }
-      : { bg: '#1f1f26', text: '#f3f3f6', muted: '#a6a6b2', grid: 'rgba(255,255,255,.07)', tipBg: '#2c2c36', tipText: '#f3f3f6', tipLine: 'rgba(255,255,255,.12)', ring: '#1f1f26', pill: 'rgba(255,255,255,.09)', accent: '#ff5ca2', cross: 'rgba(255,255,255,.22)' };
+      ? { bg: '#ffffff', text: '#1b1b22', muted: '#62626e', grid: 'rgba(20,20,35,.08)', tipBg: '#1b1b22', tipText: '#ffffff', tipLine: 'rgba(0,0,0,.08)', ring: '#ffffff', pill: 'rgba(20,20,35,.07)', accent: acc.btn, cross: 'rgba(20,20,35,.22)' }
+      : { bg: '#1f1f26', text: '#f3f3f6', muted: '#a6a6b2', grid: 'rgba(255,255,255,.07)', tipBg: '#2c2c36', tipText: '#f3f3f6', tipLine: 'rgba(255,255,255,.12)', ring: '#1f1f26', pill: 'rgba(255,255,255,.09)', accent: acc.light, cross: 'rgba(255,255,255,.22)' };
   }
 
   function roundRect(ctx, x, y, w, h, r) {
@@ -420,7 +421,7 @@
                   zoom: {
                     wheel: { enabled: true, speed: 0.08, modifierKey: tool === 'pointer' ? 'ctrl' : undefined },
                     pinch: { enabled: true },
-                    drag: { enabled: tool === 'zoom', backgroundColor: 'rgba(255,92,162,.12)', borderColor: '#ff5ca2', borderWidth: 1 },
+                    drag: { enabled: tool === 'zoom', backgroundColor: C.rgba(T.accent, 0.12), borderColor: T.accent, borderWidth: 1 },
                     mode: 'xy',
                     onZoomComplete: o.onZoom,
                   },
