@@ -1,0 +1,118 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "users": {
+      ".read": true,
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['username', 'displayName'])",
+        "username": { ".validate": "newData.isString() && newData.val().matches(/^[a-z0-9_]{3,20}$/) && newData.parent().parent().parent().child('usernames').child(newData.val()).val() === $uid" },
+        "displayName": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" },
+        "bio": { ".validate": "newData.isString() && newData.val().length <= 280" },
+        "avatar": { ".validate": "newData.isString() && newData.val().length <= 100000" },
+        "createdAt": { ".validate": "newData.isNumber()" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "usernames": {
+      ".read": true,
+      "$name": {
+        ".write": "auth != null && (!data.exists() || data.val() === auth.uid)",
+        ".validate": "newData.isString() && newData.val() === auth.uid && $name.matches(/^[a-z0-9_]{3,20}$/)"
+      }
+    },
+
+    "public": {
+      ".read": true,
+      ".indexOn": ["publishedAt", "owner"],
+      "$pid": {
+        ".write": "auth != null && ((!data.exists() && newData.child('owner').val() === auth.uid) || data.child('owner').val() === auth.uid)",
+        ".validate": "newData.hasChildren(['owner', 'title', 'slug', 'doc', 'publishedAt'])",
+        "owner": { ".validate": "newData.val() === auth.uid" },
+        "ownerName": { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "ownerUsername": { ".validate": "newData.isString() && newData.val().length <= 20" },
+        "title": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 80" },
+        "description": { ".validate": "newData.isString() && newData.val().length <= 500" },
+        "slug": { ".validate": "newData.isString() && newData.parent().parent().parent().child('slugs').child(newData.val()).val() === $pid" },
+        "doc": { ".validate": "newData.hasChildren(['type'])" },
+        "graphId": { ".validate": "newData.isString()" },
+        "publishedAt": { ".validate": "newData.isNumber()" },
+        "updatedAt": { ".validate": "newData.isNumber()" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "slugs": {
+      ".read": true,
+      "$slug": {
+        ".write": "auth != null && (!data.exists() || root.child('public').child(data.val()).child('owner').val() === auth.uid)",
+        ".validate": "newData.isString() && $slug.matches(/^[a-z0-9-]{3,48}$/) && newData.parent().parent().child('public').child(newData.val()).child('owner').val() === auth.uid"
+      }
+    },
+
+    "likes": {
+      "$pid": {
+        ".read": true,
+        ".write": "auth != null && !newData.exists() && root.child('public').child($pid).child('owner').val() === auth.uid",
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid && (root.child('public').child($pid).exists() || !newData.exists())",
+          ".validate": "newData.isNumber()"
+        }
+      }
+    },
+
+    "graphs": {
+      "$gid": {
+        ".read": "auth != null && data.child('members').child(auth.uid).exists()",
+        ".write": "auth != null && !newData.exists() && data.child('meta/owner').val() === auth.uid",
+        "meta": {
+          ".write": "auth != null && newData.parent().child('members').child(auth.uid).exists()",
+          ".validate": "newData.hasChildren(['owner', 'createdAt'])",
+          "owner": { ".validate": "(!data.exists() && newData.val() === auth.uid) || newData.val() === data.val()" },
+          "title": { ".validate": "newData.isString() && newData.val().length <= 120" },
+          "createdAt": { ".validate": "newData.isNumber()" },
+          "updatedAt": { ".validate": "newData.isNumber()" },
+          "$other": { ".validate": false }
+        },
+        "doc": {
+          ".write": "auth != null && newData.parent().child('members').child(auth.uid).exists()"
+        },
+        "members": {
+          "$uid": {
+            ".write": "auth != null && (root.child('graphs').child($gid).child('meta/owner').val() === auth.uid || (auth.uid === $uid && (!newData.exists() || newData.val() === root.child('invites').child($gid).child('token').val() || (!root.child('graphs').child($gid).exists() && newData.val() === 'owner'))))",
+            ".validate": "newData.isString() && newData.val().length <= 64"
+          }
+        }
+      }
+    },
+
+    "invites": {
+      "$gid": {
+        ".read": "auth != null && root.child('graphs').child($gid).child('members').child(auth.uid).exists()",
+        ".write": "auth != null && (root.child('graphs').child($gid).child('meta/owner').val() === auth.uid || newData.parent().parent().child('graphs').child($gid).child('meta/owner').val() === auth.uid)",
+        "token": { ".validate": "newData.isString() && newData.val().length >= 16" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "userGraphs": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    "presence": {
+      "$gid": {
+        ".read": "auth != null && root.child('graphs').child($gid).child('members').child(auth.uid).exists()",
+        ".write": "auth != null && !newData.exists() && root.child('graphs').child($gid).child('meta/owner').val() === auth.uid",
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid && (root.child('graphs').child($gid).child('members').child(auth.uid).exists() || !newData.exists())"
+        }
+      }
+    }
+  }
+}

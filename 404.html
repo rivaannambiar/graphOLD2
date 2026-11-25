@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Graph Studio</title>
+  <!-- graph-studio-404 -->
+  <script>
+    /* GitHub Pages sends unknown paths here. This bounces
+       /graph/my-graph/preview to the app, which restores the pretty URL. */
+    (function () {
+      var keys = ['graph', 'studio', 'community', 'u', 'view'];
+      var segs = location.pathname.split('/');
+      var at = -1;
+      for (var i = 1; i < segs.length; i++) { if (keys.indexOf(segs[i]) !== -1) { at = i; break; } }
+      var base = at > 0 ? segs.slice(0, at).join('/') + '/' : '/';
+      var route = at > 0 ? segs.slice(at).join('/') : '';
+      location.replace(base + '?r=' + encodeURIComponent(route + location.search) + location.hash);
+    })();
+  </script>
+</head>
+<body style="background:#121218"></body>
+</html>
