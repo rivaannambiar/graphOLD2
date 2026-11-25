@@ -345,7 +345,7 @@
     const ownerUid = S.mode === 'cloud' && S.meta ? S.meta.owner : null;
     const show = (p) => { av.innerHTML = U.avatar(p, 52); };
     if (ownerUid && GS.cloud.configured) GS.cloud.getProfile(ownerUid).then((p) => show(p || { name: '?' })).catch(() => show({ name: '?' }));
-    else show(GS.cloud.profile || { name: C.prefs.shareName || 'You', avatar: 'color:#ff5ca2' });
+    else show(GS.cloud.profile || { name: C.prefs.shareName || 'You', avatar: 'color:' + C.accentSet(C.prefs.accent).main });
     setSave(S.saveState);
   }
   function autosize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
@@ -1116,6 +1116,7 @@
     const check = C.debounce(async () => {
       const s = C.cleanSlug(slugIn.value);
       if (s.length < 3) { okSlug = false; state.className = 'slug-state bad'; state.textContent = 'Use at least 3 letters or numbers.'; return; }
+      if (['graph', 'studio', 'community', 'view', 'preview', 'index'].includes(s)) { okSlug = false; state.className = 'slug-state bad'; state.textContent = 'That word is used by the app itself. Try another.'; return; }
       state.className = 'slug-state'; state.textContent = 'Checking…';
       try {
         const owner = await GS.cloud.slugOwner(s);
@@ -1144,7 +1145,7 @@
         $('#pbDone [data-copy]', body).addEventListener('click', () => C.copyText(url).then(() => U.toast('Link copied', { icon: 'link' })));
         go.querySelector('span').textContent = 'Update';
         const r = go.getBoundingClientRect();
-        U.confetti(r.left + r.width / 2, r.top, C.seriesOf(S.doc).map((s) => s.color).concat(['#ff5ca2']), 34);
+        U.confetti(r.left + r.width / 2, r.top, C.seriesOf(S.doc).map((s) => s.color).concat([C.accentSet(C.prefs.accent).light]), 34);
       } catch (e) {
         console.warn(e);
         U.toast(/permission/i.test(e.message) ? 'Firebase refused that. Check that you pasted the rules from database.rules.json.' : e.message, { tone: 'warn', ms: 6000 });
@@ -1236,6 +1237,7 @@
     S.peers = {};
     const p = S.root && $('#presence', S.root);
     if (p) p.innerHTML = '';
+    S.presSig = '';
   }
   function onPointerMove(e) {
     if (!S.pres || !S.root) return;
@@ -1319,23 +1321,31 @@
   function renderPresence() {
     const box = S.root && $('#presence', S.root);
     if (!box) return;
-    if (S.mode !== 'cloud' || !S.pres) { box.innerHTML = ''; return; }
+    if (S.mode !== 'cloud' || !S.pres) { box.innerHTML = ''; S.presSig = ''; return; }
+    if (!box.querySelector('#btnReact')) {
+      // Built once, so the button stays clickable while cursors stream in.
+      box.innerHTML = `<div class="pres-avs"></div><button class="icon-btn" type="button" id="btnReact" data-tip="Send a reaction" aria-label="Send a reaction">${icon('smile')}</button>`;
+      S.presSig = '';
+      $('#btnReact', box).addEventListener('click', (e) => {
+        const bar = h(`<div class="react-bar">${REACTIONS.map((r) => `<button type="button" data-r="${r}" aria-label="React ${r}">${r}</button>`).join('')}</div>`);
+        const pop = U.popover(e.currentTarget, bar, { align: 'end', className: 'pop-react' });
+        bar.addEventListener('click', (ev) => {
+          const b = ev.target.closest('[data-r]');
+          if (!b || !S.pres) return;
+          pop.close();
+          S.pres.react(b.dataset.r);
+          const at = S.lastPointer || { x: innerWidth / 2, y: innerHeight / 2 };
+          U.emojiBurst(b.dataset.r, at.x, at.y);
+        });
+      });
+    }
     const list = Object.keys(S.peers).map((u) => ({ uid: u, name: S.peers[u].name, avatar: 'color:' + (S.peers[u].color || '#ff5ca2') }));
     const me = GS.cloud.profile ? Object.assign({ uid: GS.cloud.user.uid }, GS.cloud.profile) : { uid: GS.cloud.user.uid, name: 'You', avatar: 'color:' + S.myColor };
-    box.innerHTML = `<div class="pres-avs">${[me].concat(list).slice(0, 5).map((p, i) => `<span class="pres-av" style="--i:${i}" data-tip="${esc(i === 0 ? 'You' : p.name)}">${U.avatar(p, 30)}</span>`).join('')}${list.length > 4 ? `<span class="pres-more">+${list.length - 4}</span>` : ''}</div>
-      <button class="icon-btn" type="button" id="btnReact" data-tip="Send a reaction" aria-label="Send a reaction">${icon('smile')}</button>`;
-    $('#btnReact', box).addEventListener('click', (e) => {
-      const bar = h(`<div class="react-bar">${REACTIONS.map((r) => `<button type="button" data-r="${r}" aria-label="React ${r}">${r}</button>`).join('')}</div>`);
-      const pop = U.popover(e.currentTarget, bar, { align: 'end', className: 'pop-react' });
-      bar.addEventListener('click', (ev) => {
-        const b = ev.target.closest('[data-r]');
-        if (!b) return;
-        pop.close();
-        S.pres.react(b.dataset.r);
-        const at = S.lastPointer || { x: innerWidth / 2, y: innerHeight / 2 };
-        U.emojiBurst(b.dataset.r, at.x, at.y);
-      });
-    });
+    const sig = JSON.stringify([me.uid, me.displayName || me.name, me.avatar, list]);
+    if (sig === S.presSig) return;
+    S.presSig = sig;
+    $('.pres-avs', box).innerHTML = [me].concat(list).slice(0, 5).map((p, i) => `<span class="pres-av" style="--i:${i}" data-tip="${esc(i === 0 ? 'You' : p.name)}">${U.avatar(p, 30)}</span>`).join('')
+      + (list.length > 4 ? `<span class="pres-more">+${list.length - 4}</span>` : '');
   }
   function renderPeerCells() {
     if (!S.root) return;
@@ -1381,6 +1391,7 @@
       { label: 'Sample graphs', icon: 'table', run: samplesDialog },
       { label: 'My graphs', icon: 'grid', run: libraryDialog },
       { label: 'Go to the community wall', icon: 'globe', run: () => router().go('community') },
+      { label: 'Change accent colour', icon: 'palette', keywords: 'theme color colour settings', run: () => GS.pages.settingsModal() },
     ]);
   }
 
@@ -1471,6 +1482,7 @@
     S.cleanups.push(C.bus.on('cloud:connection', () => setSave(S.saveState)));
     S.cleanups.push(C.bus.on('auth', () => { if (S.root && S.doc) renderHeader(); }));
     S.cleanups.push(C.bus.on('fonts', () => { if (S.chart) S.chart.update('none'); moveTypeInd(); }));
+    S.cleanups.push(C.bus.on('accent', () => { if (S.chart && S.doc) S.chart = E.update(S.chart, S.doc, chartOpts({ mode: 'none' })); if (S.doc) renderHeader(); }));
     S.cleanups.push(C.bus.on('cloud:signing-out', () => { if (S.mode === 'cloud') { stopCloud(); router().go('studio'); } }));
   }
 
