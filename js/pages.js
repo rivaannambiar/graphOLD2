@@ -186,7 +186,10 @@
     const cfgOn = GS.cloud.configured;
     const m = U.modal({
       title: 'Settings', width: 480,
-      body: `<div class="set-list">
+      body: `<h3 class="sub-h" style="margin-top:0">Accent colour</h3>
+        <div class="accents" id="stAccents">${C.ACCENTS.map(([c, n]) => `<button type="button" class="acc" data-acc="${c}" style="--c:${c}" aria-label="${n}" data-tip="${n}"></button>`).join('')}<button type="button" class="acc acc-custom" id="stAccCustom" aria-label="Pick any colour" data-tip="Any colour">+</button></div>
+        <p class="pnote">Used for buttons, the + button, highlights and links. Saved on this device.</p>
+        <div class="set-list">
         <label class="set-row"><span><b>Reduce motion</b><small>Turns off entrance animations and celebration effects.</small></span><span class="switch"><input type="checkbox" id="stMotion" ${C.prefs.reduceMotion ? 'checked' : ''}><span></span></span></label>
         <label class="set-row"><span><b>Show other people’s cursors</b><small>In live graphs.</small></span><span class="switch"><input type="checkbox" id="stCursors" ${C.prefs.cursors ? 'checked' : ''}><span></span></span></label>
         </div>
@@ -194,6 +197,19 @@
         <div class="keys">${[['⌘K', 'Command menu'], ['⌘Z / ⇧⌘Z', 'Undo / redo'], ['⌘E', 'Export'], ['Enter', 'Next row (adds one at the end)'], ['V  H  Z', 'Point, pan, box-zoom'], ['Ctrl + scroll', 'Zoom the graph'], ['F', 'Focus mode'], ['R', 'Replay animation'], ['0', 'Reset zoom']].map(([k, d]) => `<div><kbd>${k}</kbd><span>${d}</span></div>`).join('')}</div>
         <h3 class="sub-h">Cloud</h3>
         <p class="muted">${cfgOn ? `Connected to the Firebase project <b>${esc(((window.GRAPH_STUDIO_CONFIG || {}).firebase || {}).projectId || '')}</b>.` : 'Not connected. Paste your Firebase config into <code>js/config.js</code> to turn on accounts, publishing and live editing.'}</p>`,
+    });
+    const markAccent = () => {
+      const cur = C.normHex(C.prefs.accent);
+      const preset = C.ACCENTS.some(([c]) => c === cur);
+      $$('#stAccents .acc[data-acc]', m.body).forEach((b) => b.classList.toggle('on', b.dataset.acc === cur));
+      const custom = $('#stAccCustom', m.body);
+      custom.classList.toggle('on', !preset);
+      custom.style.setProperty('--c', cur);
+    };
+    markAccent();
+    C.on(m.body, 'click', '#stAccents [data-acc]', (e, b) => { U.setAccent(b.dataset.acc); markAccent(); });
+    $('#stAccCustom', m.body).addEventListener('click', (e) => {
+      U.colorPicker(e.currentTarget, C.prefs.accent, (c) => { U.setAccent(c); markAccent(); }, { title: 'Accent colour' });
     });
     $('#stMotion', m.body).addEventListener('change', (e) => { C.prefs.reduceMotion = e.target.checked; C.savePrefs(); document.documentElement.classList.toggle('reduce', C.prefs.reduceMotion); });
     $('#stCursors', m.body).addEventListener('change', (e) => { C.prefs.cursors = e.target.checked; C.savePrefs(); });
@@ -250,7 +266,8 @@
     if (next.mine) {
       btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop');
       const r = btn.getBoundingClientRect();
-      U.confetti(r.left + r.width / 2, r.top + r.height / 2, ['#ff5ca2', '#ff8fc1', '#ffd1e6'], 16);
+      const a = C.accentSet(C.prefs.accent);
+      U.confetti(r.left + r.width / 2, r.top + r.height / 2, [a.main, a.light, C.mix(a.main, '#ffffff', 0.6)], 16);
     }
     try { await GS.cloud.setLike(pid, next.mine); } catch (e) { setLikeBtn(btn, l); U.toast('Couldn’t save that like', { tone: 'warn' }); }
   }
